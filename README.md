@@ -1,5 +1,6 @@
 leaflet-geojson-cluster
 =====================
+[![NPM](https://nodei.co/npm/leaflet-geojson-cluster.png)](https://nodei.co/npm/leaflet-geojson-cluster/)
 
 [leaflet marker cluster](https://github.com/Leaflet/Leaflet.markercluster) + [leaflet geojson](http://leafletjs.com/reference.html#geojson)
 
