@@ -11,7 +11,6 @@ leaflet-geojson-cluster
 var GeoJSONCluster = require('leaftlet-geojson-cluster');
 
 var markers = GeoJSONCluster(your_geojson);
-... Add more layers ...
 map.addLayer(markers);
 ```
 
