@@ -14,6 +14,12 @@ var markers = GeoJSONCluster(your_geojson);
 map.addLayer(markers);
 ```
 
+#Example
+```
+npm install
+npm start
+```
+
 
 ### License
 MIT
