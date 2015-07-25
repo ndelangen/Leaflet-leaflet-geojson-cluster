@@ -8,8 +8,7 @@ leaflet-geojson-cluster
 ```javascript
 var GeoJSONCluster = require('leaftlet-geojson-cluster');
 
-var markers = new GeoJSONCluster();
-markers.addLayer(new L.Marker(getRandomLatLng(map)));
+var markers = GeoJSONCluster(your_geojson);
 ... Add more layers ...
 map.addLayer(markers);
 ```
