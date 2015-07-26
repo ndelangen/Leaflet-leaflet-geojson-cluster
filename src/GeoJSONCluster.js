@@ -3,9 +3,9 @@
  */
 
 var L = require('leaflet');
-L.markerClusterGroup = require('./MarkerClusterGroup');
+var markerClusterGroup = require('./MarkerClusterGroup');
 
-L.GeoJSON = L.markerClusterGroup.extend({
+var GeoJSON = markerClusterGroup.extend({
 
   initialize: function (geojson, options) {
     L.setOptions(this, options);
@@ -55,11 +55,11 @@ L.GeoJSON = L.markerClusterGroup.extend({
 
     if (options.filter && !options.filter(geojson)) { return this; }
 
-    var layer = L.GeoJSON.geometryToLayer(geojson, options);
+    var layer = GeoJSON.geometryToLayer(geojson, options);
     if (!layer) {
       return this;
     }
-    layer.feature = L.GeoJSON.asFeature(geojson);
+    layer.feature = GeoJSON.asFeature(geojson);
 
     layer.defaultOptions = layer.options;
     this.resetStyle(layer);
@@ -94,7 +94,7 @@ L.GeoJSON = L.markerClusterGroup.extend({
   }
 });
 
-L.extend(L.GeoJSON, {
+L.extend(GeoJSON, {
   geometryToLayer: function (geojson, options) {
 
     var geometry = geojson.type === 'Feature' ? geojson.geometry : geojson,
@@ -178,8 +178,8 @@ L.extend(L.GeoJSON, {
 
     for (var i = 0, len = latlngs.length; i < len; i++) {
       coords.push(levelsDeep ?
-        L.GeoJSON.latLngsToCoords(latlngs[i], levelsDeep - 1, closed) :
-        L.GeoJSON.latLngToCoords(latlngs[i]));
+        GeoJSON.latLngsToCoords(latlngs[i], levelsDeep - 1, closed) :
+        GeoJSON.latLngToCoords(latlngs[i]));
     }
 
     if (!levelsDeep && closed) {
@@ -192,7 +192,7 @@ L.extend(L.GeoJSON, {
   getFeature: function (layer, newGeometry) {
     return layer.feature ?
         L.extend({}, layer.feature, {geometry: newGeometry}) :
-        L.GeoJSON.asFeature(newGeometry);
+        GeoJSON.asFeature(newGeometry);
   },
 
   asFeature: function (geoJSON) {
@@ -210,9 +210,9 @@ L.extend(L.GeoJSON, {
 
 var PointToGeoJSON = {
   toGeoJSON: function () {
-    return L.GeoJSON.getFeature(this, {
+    return GeoJSON.getFeature(this, {
       type: 'Point',
-      coordinates: L.GeoJSON.latLngToCoords(this.getLatLng())
+      coordinates: GeoJSON.latLngToCoords(this.getLatLng())
     });
   }
 };
@@ -224,9 +224,9 @@ L.CircleMarker.include(PointToGeoJSON);
 L.Polyline.prototype.toGeoJSON = function () {
   var multi = !L.Polyline._flat(this._latlngs);
 
-  var coords = L.GeoJSON.latLngsToCoords(this._latlngs, multi ? 1 : 0);
+  var coords = GeoJSON.latLngsToCoords(this._latlngs, multi ? 1 : 0);
 
-  return L.GeoJSON.getFeature(this, {
+  return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'LineString',
     coordinates: coords
   });
@@ -236,13 +236,13 @@ L.Polygon.prototype.toGeoJSON = function () {
   var holes = !L.Polyline._flat(this._latlngs),
       multi = holes && !L.Polyline._flat(this._latlngs[0]);
 
-  var coords = L.GeoJSON.latLngsToCoords(this._latlngs, multi ? 2 : holes ? 1 : 0, true);
+  var coords = GeoJSON.latLngsToCoords(this._latlngs, multi ? 2 : holes ? 1 : 0, true);
 
   if (!holes) {
     coords = [coords];
   }
 
-  return L.GeoJSON.getFeature(this, {
+  return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'Polygon',
     coordinates: coords
   });
@@ -257,7 +257,7 @@ L.LayerGroup.include({
       coords.push(layer.toGeoJSON().geometry.coordinates);
     });
 
-    return L.GeoJSON.getFeature(this, {
+    return GeoJSON.getFeature(this, {
       type: 'MultiPoint',
       coordinates: coords
     });
@@ -277,12 +277,12 @@ L.LayerGroup.include({
     this.eachLayer(function (layer) {
       if (layer.toGeoJSON) {
         var json = layer.toGeoJSON();
-        jsons.push(isGeometryCollection ? json.geometry : L.GeoJSON.asFeature(json));
+        jsons.push(isGeometryCollection ? json.geometry : GeoJSON.asFeature(json));
       }
     });
 
     if (isGeometryCollection) {
-      return L.GeoJSON.getFeature(this, {
+      return GeoJSON.getFeature(this, {
         geometries: jsons,
         type: 'GeometryCollection'
       });
@@ -296,5 +296,5 @@ L.LayerGroup.include({
 });
 
 module.exports = function (geojson, options) {
-  return new L.GeoJSON(geojson, options);
+  return new GeoJSON(geojson, options);
 };

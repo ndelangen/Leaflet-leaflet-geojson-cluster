@@ -101,7 +101,7 @@ var MarkerCluster = L.Marker.extend({
     this._iconNeedsUpdate = true;
     this._expandBounds(new1);
 
-    if (new1 instanceof L.MarkerCluster) {
+    if (new1 instanceof MarkerCluster) {
       if (!isNotificationFromChild) {
         this._childClusters.push(new1);
         new1.__parent = this;
@@ -124,7 +124,7 @@ var MarkerCluster = L.Marker.extend({
     var addedCount,
         addedLatLng = marker._wLatLng || marker._latlng;
 
-    if (marker instanceof L.MarkerCluster) {
+    if (marker instanceof MarkerCluster) {
       this._bounds.extend(marker._bounds);
       addedCount = marker._childCount;
     } else {

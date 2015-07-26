@@ -1,6 +1,6 @@
 var L = require('leaflet');
-L.DistanceGrid = require('./DistanceGrid');
-L.MarkerCluster = require('./MarkerCluster');
+var DistanceGrid = require('./DistanceGrid');
+var MarkerCluster = require('./MarkerCluster');
 
 /*
  * L.MarkerClusterGroup extends L.FeatureGroup by clustering the markers contained within
@@ -218,7 +218,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
         if (offset === layersArray.length) {
           //Update the icons of all those visible clusters that were affected
           this._featureGroup.eachLayer(function (c) {
-            if (c instanceof L.MarkerCluster && c._iconNeedsUpdate) {
+            if (c instanceof MarkerCluster && c._iconNeedsUpdate) {
               c._updateIcon();
             }
           });
@@ -293,7 +293,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
     this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 
     fg.eachLayer(function (c) {
-      if (c instanceof L.MarkerCluster) {
+      if (c instanceof MarkerCluster) {
         c._updateIcon();
       }
     });
@@ -618,7 +618,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
   },
 
   _propagateEvent: function (e) {
-    if (e.layer instanceof L.MarkerCluster) {
+    if (e.layer instanceof MarkerCluster) {
       //Prevent multiple clustermouseover/off events if the icon is made up of stacked divs (Doesn't work in ie <= 8, no relatedTarget)
       if (e.originalEvent && this._isOrIsParent(e.layer._icon, e.originalEvent.relatedTarget)) {
         return;
@@ -766,11 +766,11 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
 
     //Set up DistanceGrids for each zoom
     for (var zoom = maxZoom; zoom >= 0; zoom--) {
-      this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
-      this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom));
+      this._gridClusters[zoom] = new DistanceGrid(radiusFn(zoom));
+      this._gridUnclustered[zoom] = new DistanceGrid(radiusFn(zoom));
     }
 
-    this._topClusterLevel = new L.MarkerCluster(this, -1);
+    this._topClusterLevel = new MarkerCluster(this, -1);
   },
 
   //Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
@@ -812,7 +812,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
 
         //Create new cluster with these 2 in it
 
-        var newCluster = new L.MarkerCluster(this, zoom, closest, layer);
+        var newCluster = new MarkerCluster(this, zoom, closest, layer);
         gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
         closest.__parent = newCluster;
         layer.__parent = newCluster;
@@ -820,7 +820,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
         //First create any new intermediate parent clusters that don't exist
         var lastParent = newCluster;
         for (z = zoom - 1; z > parent._zoom; z--) {
-          lastParent = new L.MarkerCluster(this, z, lastParent);
+          lastParent = new MarkerCluster(this, z, lastParent);
           gridClusters[z].addObject(lastParent, this._map.project(closest.getLatLng(), z));
         }
         parent._addChild(lastParent);
@@ -995,7 +995,7 @@ MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
     this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
     //TODO Maybe? Update markers in _recursivelyBecomeVisible
     fg.eachLayer(function (n) {
-      if (!(n instanceof L.MarkerCluster) && n._icon) {
+      if (!(n instanceof MarkerCluster) && n._icon) {
         n.setOpacity(1);
       }
     });
