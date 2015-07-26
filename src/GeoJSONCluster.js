@@ -3,7 +3,7 @@
  */
 
 var L = require('leaflet');
-L.markerClusterGroup = require('./markerClusterGroup');
+L.markerClusterGroup = require('./MarkerClusterGroup');
 
 L.GeoJSON = L.markerClusterGroup.extend({
 
