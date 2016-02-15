@@ -1,5 +1,5 @@
 {
-  "name": "leaflet-geojson-cluster",
+  "name": "nodesafe-leaflet-geojson-cluster",
   "repository": "https://github.com/ndelangen/Leaflet-leaflet-geojson-cluster",
   "version": "0.0.4",
   "description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
