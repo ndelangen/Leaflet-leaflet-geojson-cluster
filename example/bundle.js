@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var L = require('leaflet');
+var L = require('nodesafe-leaflet');
 var request = require('superagent');
 var GeoJSONCluster = require('../');
 
@@ -51,20 +51,184 @@ request
     var markers = GeoJSONCluster(json);
     map.addLayer(markers)
   });
-},{"../":2,"leaflet":3,"superagent":4}],2:[function(require,module,exports){
+
+},{"../":2,"nodesafe-leaflet":4,"superagent":6}],2:[function(require,module,exports){
 module.exports = require('./src/GeoJSONCluster');
 
 },{"./src/GeoJSONCluster":8}],3:[function(require,module,exports){
+
+/**
+ * Expose `Emitter`.
+ */
+
+module.exports = Emitter;
+
+/**
+ * Initialize a new `Emitter`.
+ *
+ * @api public
+ */
+
+function Emitter(obj) {
+  if (obj) return mixin(obj);
+};
+
+/**
+ * Mixin the emitter properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in Emitter.prototype) {
+    obj[key] = Emitter.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Listen on the given `event` with `fn`.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.on =
+Emitter.prototype.addEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
+    .push(fn);
+  return this;
+};
+
+/**
+ * Adds an `event` listener that will be invoked a single
+ * time then automatically removed.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.once = function(event, fn){
+  function on() {
+    this.off(event, on);
+    fn.apply(this, arguments);
+  }
+
+  on.fn = fn;
+  this.on(event, on);
+  return this;
+};
+
+/**
+ * Remove the given callback for `event` or all
+ * registered callbacks.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.off =
+Emitter.prototype.removeListener =
+Emitter.prototype.removeAllListeners =
+Emitter.prototype.removeEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+
+  // all
+  if (0 == arguments.length) {
+    this._callbacks = {};
+    return this;
+  }
+
+  // specific event
+  var callbacks = this._callbacks['$' + event];
+  if (!callbacks) return this;
+
+  // remove all handlers
+  if (1 == arguments.length) {
+    delete this._callbacks['$' + event];
+    return this;
+  }
+
+  // remove specific handler
+  var cb;
+  for (var i = 0; i < callbacks.length; i++) {
+    cb = callbacks[i];
+    if (cb === fn || cb.fn === fn) {
+      callbacks.splice(i, 1);
+      break;
+    }
+  }
+  return this;
+};
+
+/**
+ * Emit `event` with the given args.
+ *
+ * @param {String} event
+ * @param {Mixed} ...
+ * @return {Emitter}
+ */
+
+Emitter.prototype.emit = function(event){
+  this._callbacks = this._callbacks || {};
+  var args = [].slice.call(arguments, 1)
+    , callbacks = this._callbacks['$' + event];
+
+  if (callbacks) {
+    callbacks = callbacks.slice(0);
+    for (var i = 0, len = callbacks.length; i < len; ++i) {
+      callbacks[i].apply(this, args);
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Return array of callbacks for `event`.
+ *
+ * @param {String} event
+ * @return {Array}
+ * @api public
+ */
+
+Emitter.prototype.listeners = function(event){
+  this._callbacks = this._callbacks || {};
+  return this._callbacks['$' + event] || [];
+};
+
+/**
+ * Check if this emitter has `event` handlers.
+ *
+ * @param {String} event
+ * @return {Boolean}
+ * @api public
+ */
+
+Emitter.prototype.hasListeners = function(event){
+  return !! this.listeners(event).length;
+};
+
+},{}],4:[function(require,module,exports){
 /*
  Leaflet, a JavaScript library for mobile-friendly interactive maps. http://leafletjs.com
- (c) 2010-2013, Vladimir Agafonkin
+ (c) 2010-2015, Vladimir Agafonkin
  (c) 2010-2011, CloudMade
 */
-(function (window, document, undefined) {
+if (typeof window === "undefined"){(function (window, document, undefined) {
 var oldL = window.L,
     L = {};
 
-L.version = '0.7.2';
+L.version = '0.7.7';
 
 // define Leaflet for Node module pattern loaders, including Browserify
 if (typeof module === 'object' && typeof module.exports === 'object') {
@@ -576,9 +740,8 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 		gecko = ua.indexOf('gecko') !== -1,
 
 	    mobile = typeof orientation !== undefined + '',
-	    msPointer = window.navigator && window.navigator.msPointerEnabled &&
-	              window.navigator.msMaxTouchPoints && !window.PointerEvent,
-		pointer = (window.PointerEvent && window.navigator.pointerEnabled && window.navigator.maxTouchPoints) ||
+	    msPointer = !window.PointerEvent && window.MSPointerEvent,
+		pointer = (window.PointerEvent && window.navigator.pointerEnabled) ||
 				  msPointer,
 	    retina = ('devicePixelRatio' in window && window.devicePixelRatio > 1) ||
 	             ('matchMedia' in window && window.matchMedia('(min-resolution:144dpi)') &&
@@ -591,38 +754,8 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 	    opera3d = 'OTransition' in doc.style,
 	    any3d = !window.L_DISABLE_3D && (ie3d || webkit3d || gecko3d || opera3d) && !phantomjs;
 
-
-	// PhantomJS has 'ontouchstart' in document.documentElement, but doesn't actually support touch.
-	// https://github.com/Leaflet/Leaflet/pull/1434#issuecomment-13843151
-
-	var touch = !window.L_NO_TOUCH && !phantomjs && (function () {
-
-		var startName = 'ontouchstart';
-
-		// IE10+ (We simulate these into touch* events in L.DomEvent and L.DomEvent.Pointer) or WebKit, etc.
-		if (pointer || (startName in doc)) {
-			return true;
-		}
-
-		// Firefox/Gecko
-		var div = document.createElement('div'),
-		    supported = false;
-
-		if (!div.setAttribute) {
-			return false;
-		}
-		div.setAttribute(startName, 'return;');
-
-		if (typeof div[startName] === 'function') {
-			supported = true;
-		}
-
-		div.removeAttribute(startName);
-		div = null;
-
-		return supported;
-	}());
-
+	var touch = !window.L_NO_TOUCH && !phantomjs && (pointer || 'ontouchstart' in window ||
+		(window.DocumentTouch && document instanceof window.DocumentTouch));
 
 	L.Browser = {
 		ie: ie,
@@ -1689,14 +1822,15 @@ L.Map = L.Class.extend({
 		var paddingTL = L.point(options.paddingTopLeft || options.padding || [0, 0]),
 		    paddingBR = L.point(options.paddingBottomRight || options.padding || [0, 0]),
 
-		    zoom = this.getBoundsZoom(bounds, false, paddingTL.add(paddingBR)),
-		    paddingOffset = paddingBR.subtract(paddingTL).divideBy(2),
+		    zoom = this.getBoundsZoom(bounds, false, paddingTL.add(paddingBR));
+
+		zoom = (typeof options.maxZoom === 'number') ? Math.min(options.maxZoom, zoom) : zoom;
+
+		var paddingOffset = paddingBR.subtract(paddingTL).divideBy(2),
 
 		    swPoint = this.project(bounds.getSouthWest(), zoom),
 		    nePoint = this.project(bounds.getNorthEast(), zoom),
 		    center = this.unproject(swPoint.add(nePoint).divideBy(2).add(paddingOffset), zoom);
-
-		zoom = options && options.maxZoom ? Math.min(options.maxZoom, zoom) : zoom;
 
 		return this.setView(center, zoom, options);
 	},
@@ -2839,7 +2973,7 @@ L.TileLayer = L.Class.extend({
 		}
 
 		if (options.bounds) {
-			var tileSize = options.tileSize,
+			var tileSize = this._getTileSize(),
 			    nwPoint = tilePoint.multiplyBy(tileSize),
 			    sePoint = nwPoint.add([tileSize, tileSize]),
 			    nw = this._map.unproject(nwPoint),
@@ -3624,10 +3758,8 @@ L.Marker = L.Class.extend({
 
 	update: function () {
 		if (this._icon) {
-			var pos = this._map.latLngToLayerPoint(this._latlng).round();
-			this._setPos(pos);
+			this._setPos(this._map.latLngToLayerPoint(this._latlng).round());
 		}
-
 		return this;
 	},
 
@@ -3650,7 +3782,7 @@ L.Marker = L.Class.extend({
 			if (options.title) {
 				icon.title = options.title;
 			}
-			
+
 			if (options.alt) {
 				icon.alt = options.alt;
 			}
@@ -4285,6 +4417,7 @@ L.Marker.include({
 		if (content instanceof L.Popup) {
 			L.setOptions(content, options);
 			this._popup = content;
+			content._source = this;
 		} else {
 			this._popup = new L.Popup(options, this)
 				.setContent(content);
@@ -4477,7 +4610,9 @@ L.FeatureGroup = L.LayerGroup.extend({
 			layer = this._layers[layer];
 		}
 
-		layer.off(L.FeatureGroup.EVENTS, this._propagateEvent, this);
+		if ('off' in layer) {
+			layer.off(L.FeatureGroup.EVENTS, this._propagateEvent, this);
+		}
 
 		L.LayerGroup.prototype.removeLayer.call(this, layer);
 
@@ -4797,7 +4932,7 @@ L.Path = L.Path.extend({
 	},
 
 	_fireMouseEvent: function (e) {
-		if (!this.hasEventListeners(e.type)) { return; }
+		if (!this._map || !this.hasEventListeners(e.type)) { return; }
 
 		var map = this._map,
 		    containerPoint = map.mouseEventToContainerPoint(e),
@@ -5134,7 +5269,7 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 		    .off('viewreset', this.projectLatlngs, this)
 		    .off('moveend', this._updatePath, this);
 
-		if (this.options.clickable) {
+		if (this.options.clickable && this._onClick !== undefined) {
 			this._map.off('click', this._onClick, this);
 			this._map.off('mousemove', this._onMouseMove, this);
 		}
@@ -5170,6 +5305,13 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 		}
 		if (options.fill) {
 			this._ctx.fillStyle = options.fillColor || options.color;
+		}
+
+		if (options.lineCap) {
+			this._ctx.lineCap = options.lineCap;
+		}
+		if (options.lineJoin) {
+			this._ctx.lineJoin = options.lineJoin;
 		}
 	},
 
@@ -5208,7 +5350,7 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 
 		if (options.fill) {
 			ctx.globalAlpha = options.fillOpacity;
-			ctx.fill();
+			ctx.fill(options.fillRule || 'evenodd');
 		}
 
 		if (options.stroke) {
@@ -5223,15 +5365,14 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 
 	_initEvents: function () {
 		if (this.options.clickable) {
-			// TODO dblclick
 			this._map.on('mousemove', this._onMouseMove, this);
-			this._map.on('click', this._onClick, this);
+			this._map.on('click dblclick contextmenu', this._fireMouseEvent, this);
 		}
 	},
 
-	_onClick: function (e) {
+	_fireMouseEvent: function (e) {
 		if (this._containsPoint(e.layerPoint)) {
-			this.fire('click', e);
+			this.fire(e.type, e);
 		}
 	},
 
@@ -5912,6 +6053,8 @@ L.rectangle = function (latLngBounds, options) {
 L.Circle = L.Path.extend({
 	initialize: function (latlng, radius, options) {
 		L.Path.prototype.initialize.call(this, options);
+
+		if (isNaN(radius)) { throw new Error('Circle radius cannot be NaN'); }
 
 		this._latlng = L.latLng(latlng);
 		this._mRadius = radius;
@@ -7249,8 +7392,9 @@ L.extend(L.DomEvent, {
 		    pointers = this._pointers;
 
 		var cb = function (e) {
-
-			L.DomEvent.preventDefault(e);
+			if (e.pointerType !== 'mouse' && e.pointerType !== e.MSPOINTER_TYPE_MOUSE) {
+				L.DomEvent.preventDefault(e);
+			}
 
 			var alreadyInArray = false;
 			for (var i = 0; i < pointers.length; i++) {
@@ -9009,20 +9153,25 @@ L.Map.include(!L.DomUtil.TRANSITION ? {} : {
 				delta: delta,
 				backwards: backwards
 			});
+			// horrible hack to work around a Chrome bug https://github.com/Leaflet/Leaflet/issues/3689
+			setTimeout(L.bind(this._onZoomTransitionEnd, this), 250);
 		}, this);
 	},
 
 	_onZoomTransitionEnd: function () {
+		if (!this._animatingZoom) { return; }
 
 		this._animatingZoom = false;
 
 		L.DomUtil.removeClass(this._mapPane, 'leaflet-zoom-anim');
 
-		this._resetView(this._animateToCenter, this._animateToZoom, true, true);
+		L.Util.requestAnimFrame(function () {
+			this._resetView(this._animateToCenter, this._animateToZoom, true, true);
 
-		if (L.Draggable) {
-			L.Draggable._disabled = false;
-		}
+			if (L.Draggable) {
+				L.Draggable._disabled = false;
+			}
+		}, this);
 	}
 });
 
@@ -9057,6 +9206,11 @@ L.TileLayer.include({
 
 		// force reflow
 		L.Util.falseFn(bg.offsetWidth);
+
+		var zoom = this._map.getZoom();
+		if (zoom > this.options.maxZoom || zoom < this.options.minZoom) {
+			this._clearBgBuffer();
+		}
 
 		this._animating = false;
 	},
@@ -9234,8 +9388,33 @@ L.Map.include({
 });
 
 
-}(window, document));
-},{}],4:[function(require,module,exports){
+}(window, document))};
+},{}],5:[function(require,module,exports){
+
+/**
+ * Reduce `arr` with `fn`.
+ *
+ * @param {Array} arr
+ * @param {Function} fn
+ * @param {Mixed} initial
+ *
+ * TODO: combatible error handling?
+ */
+
+module.exports = function(arr, fn, initial){  
+  var idx = 0;
+  var len = arr.length;
+  var curr = arguments.length == 3
+    ? initial
+    : arr[idx++];
+
+  while (idx < len) {
+    curr = fn.call(null, curr, arr[idx], ++idx, arr);
+  }
+  
+  return curr;
+};
+},{}],6:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -9247,9 +9426,14 @@ var reduce = require('reduce');
  * Root reference for iframes.
  */
 
-var root = 'undefined' == typeof window
-  ? (this || self)
-  : window;
+var root;
+if (typeof window !== 'undefined') { // Browser window
+  root = window;
+} else if (typeof self !== 'undefined') { // Web Worker
+  root = self;
+} else { // Other environments
+  root = this;
+}
 
 /**
  * Noop.
@@ -9336,11 +9520,29 @@ function serialize(obj) {
   var pairs = [];
   for (var key in obj) {
     if (null != obj[key]) {
-      pairs.push(encodeURIComponent(key)
-        + '=' + encodeURIComponent(obj[key]));
-    }
-  }
+      pushEncodedKeyValuePair(pairs, key, obj[key]);
+        }
+      }
   return pairs.join('&');
+}
+
+/**
+ * Helps 'serialize' with serializing arrays.
+ * Mutates the pairs array.
+ *
+ * @param {Array} pairs
+ * @param {String} key
+ * @param {Mixed} val
+ */
+
+function pushEncodedKeyValuePair(pairs, key, val) {
+  if (Array.isArray(val)) {
+    return val.forEach(function(v) {
+      pushEncodedKeyValuePair(pairs, key, v);
+    });
+  }
+  pairs.push(encodeURIComponent(key)
+    + '=' + encodeURIComponent(val));
 }
 
 /**
@@ -9450,6 +9652,18 @@ function parseHeader(str) {
   }
 
   return fields;
+}
+
+/**
+ * Check if `mime` is json or has +json structured syntax suffix.
+ *
+ * @param {String} mime
+ * @return {Boolean}
+ * @api private
+ */
+
+function isJSON(mime) {
+  return /[\/+]json\b/.test(mime);
 }
 
 /**
@@ -9632,7 +9846,7 @@ Response.prototype.setStatusProperties = function(status){
   var type = status / 100 | 0;
 
   // status / class
-  this.status = status;
+  this.status = this.statusCode = status;
   this.statusType = type;
 
   // basics
@@ -9707,6 +9921,8 @@ function Request(method, url) {
       err = new Error('Parser is unable to parse the response');
       err.parse = true;
       err.original = e;
+      // issue #675: return the raw response if the response parsing fails
+      err.rawResponse = self.xhr && self.xhr.responseText ? self.xhr.responseText : null;
       return self.callback(err);
     }
 
@@ -9725,7 +9941,7 @@ function Request(method, url) {
     new_err.response = res;
     new_err.status = res.status;
 
-    self.callback(err || new_err, res);
+    self.callback(new_err, res);
   });
 }
 
@@ -9878,6 +10094,20 @@ Request.prototype.type = function(type){
 };
 
 /**
+ * Force given parser
+ *
+ * Sets the body parser no matter type.
+ *
+ * @param {Function}
+ * @api public
+ */
+
+Request.prototype.parse = function(fn){
+  this._parser = fn;
+  return this;
+};
+
+/**
  * Set Accept to `type`, mapping values from `request.types`.
  *
  * Examples:
@@ -9978,31 +10208,20 @@ Request.prototype.field = function(name, val){
 
 Request.prototype.attach = function(field, file, filename){
   if (!this._formData) this._formData = new root.FormData();
-  this._formData.append(field, file, filename);
+  this._formData.append(field, file, filename || file.name);
   return this;
 };
 
 /**
- * Send `data`, defaulting the `.type()` to "json" when
+ * Send `data` as the request body, defaulting the `.type()` to "json" when
  * an object is given.
  *
  * Examples:
  *
- *       // querystring
- *       request.get('/search')
- *         .end(callback)
- *
- *       // multiple data "writes"
- *       request.get('/search')
- *         .send({ search: 'query' })
- *         .send({ range: '1..5' })
- *         .send({ order: 'desc' })
- *         .end(callback)
- *
  *       // manual json
  *       request.post('/user')
  *         .type('json')
- *         .send('{"name":"tj"})
+ *         .send('{"name":"tj"}')
  *         .end(callback)
  *
  *       // auto json
@@ -10083,8 +10302,13 @@ Request.prototype.callback = function(err, res){
  */
 
 Request.prototype.crossDomainError = function(){
-  var err = new Error('Origin is not allowed by Access-Control-Allow-Origin');
+  var err = new Error('Request has been terminated\nPossible causes: the network is offline, Origin is not allowed by Access-Control-Allow-Origin, the page is being unloaded, etc.');
   err.crossDomain = true;
+
+  err.status = this.status;
+  err.method = this.method;
+  err.url = this.url;
+
   this.callback(err);
 };
 
@@ -10158,6 +10382,7 @@ Request.prototype.end = function(fn){
     if (e.total > 0) {
       e.percent = e.loaded / e.total * 100;
     }
+    e.direction = 'download';
     self.emit('progress', e);
   };
   if (this.hasListeners('progress')) {
@@ -10198,7 +10423,9 @@ Request.prototype.end = function(fn){
   // body
   if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !isHost(data)) {
     // serialize stuff
-    var serialize = request.serialize[this.getHeader('Content-Type')];
+    var contentType = this.getHeader('Content-Type');
+    var serialize = this._parser || request.serialize[contentType ? contentType.split(';')[0] : ''];
+    if (!serialize && isJSON(contentType)) serialize = request.serialize['application/json'];
     if (serialize) data = serialize(data);
   }
 
@@ -10210,9 +10437,26 @@ Request.prototype.end = function(fn){
 
   // send stuff
   this.emit('request', this);
-  xhr.send(data);
+
+  // IE11 xhr.send(undefined) sends 'undefined' string as POST payload (instead of nothing)
+  // We need null here if data is undefined
+  xhr.send(typeof data !== 'undefined' ? data : null);
   return this;
 };
+
+/**
+ * Faux promise support
+ *
+ * @param {Function} fulfill
+ * @param {Function} reject
+ * @return {Request}
+ */
+
+Request.prototype.then = function (fulfill, reject) {
+  return this.end(function(err, res) {
+    err ? reject(err) : fulfill(res);
+  });
+}
 
 /**
  * Expose `Request`.
@@ -10294,11 +10538,14 @@ request.head = function(url, data, fn){
  * @api public
  */
 
-request.del = function(url, fn){
+function del(url, fn){
   var req = request('DELETE', url);
   if (fn) req.end(fn);
   return req;
 };
+
+request['del'] = del;
+request['delete'] = del;
 
 /**
  * PATCH `url` with optional `data` and callback `fn(res)`.
@@ -10360,198 +10607,7 @@ request.put = function(url, data, fn){
 
 module.exports = request;
 
-},{"emitter":5,"reduce":6}],5:[function(require,module,exports){
-
-/**
- * Expose `Emitter`.
- */
-
-module.exports = Emitter;
-
-/**
- * Initialize a new `Emitter`.
- *
- * @api public
- */
-
-function Emitter(obj) {
-  if (obj) return mixin(obj);
-};
-
-/**
- * Mixin the emitter properties.
- *
- * @param {Object} obj
- * @return {Object}
- * @api private
- */
-
-function mixin(obj) {
-  for (var key in Emitter.prototype) {
-    obj[key] = Emitter.prototype[key];
-  }
-  return obj;
-}
-
-/**
- * Listen on the given `event` with `fn`.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.on =
-Emitter.prototype.addEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-  (this._callbacks[event] = this._callbacks[event] || [])
-    .push(fn);
-  return this;
-};
-
-/**
- * Adds an `event` listener that will be invoked a single
- * time then automatically removed.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.once = function(event, fn){
-  var self = this;
-  this._callbacks = this._callbacks || {};
-
-  function on() {
-    self.off(event, on);
-    fn.apply(this, arguments);
-  }
-
-  on.fn = fn;
-  this.on(event, on);
-  return this;
-};
-
-/**
- * Remove the given callback for `event` or all
- * registered callbacks.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.off =
-Emitter.prototype.removeListener =
-Emitter.prototype.removeAllListeners =
-Emitter.prototype.removeEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-
-  // all
-  if (0 == arguments.length) {
-    this._callbacks = {};
-    return this;
-  }
-
-  // specific event
-  var callbacks = this._callbacks[event];
-  if (!callbacks) return this;
-
-  // remove all handlers
-  if (1 == arguments.length) {
-    delete this._callbacks[event];
-    return this;
-  }
-
-  // remove specific handler
-  var cb;
-  for (var i = 0; i < callbacks.length; i++) {
-    cb = callbacks[i];
-    if (cb === fn || cb.fn === fn) {
-      callbacks.splice(i, 1);
-      break;
-    }
-  }
-  return this;
-};
-
-/**
- * Emit `event` with the given args.
- *
- * @param {String} event
- * @param {Mixed} ...
- * @return {Emitter}
- */
-
-Emitter.prototype.emit = function(event){
-  this._callbacks = this._callbacks || {};
-  var args = [].slice.call(arguments, 1)
-    , callbacks = this._callbacks[event];
-
-  if (callbacks) {
-    callbacks = callbacks.slice(0);
-    for (var i = 0, len = callbacks.length; i < len; ++i) {
-      callbacks[i].apply(this, args);
-    }
-  }
-
-  return this;
-};
-
-/**
- * Return array of callbacks for `event`.
- *
- * @param {String} event
- * @return {Array}
- * @api public
- */
-
-Emitter.prototype.listeners = function(event){
-  this._callbacks = this._callbacks || {};
-  return this._callbacks[event] || [];
-};
-
-/**
- * Check if this emitter has `event` handlers.
- *
- * @param {String} event
- * @return {Boolean}
- * @api public
- */
-
-Emitter.prototype.hasListeners = function(event){
-  return !! this.listeners(event).length;
-};
-
-},{}],6:[function(require,module,exports){
-
-/**
- * Reduce `arr` with `fn`.
- *
- * @param {Array} arr
- * @param {Function} fn
- * @param {Mixed} initial
- *
- * TODO: combatible error handling?
- */
-
-module.exports = function(arr, fn, initial){  
-  var idx = 0;
-  var len = arr.length;
-  var curr = arguments.length == 3
-    ? initial
-    : arr[idx++];
-
-  while (idx < len) {
-    curr = fn.call(null, curr, arr[idx], ++idx, arr);
-  }
-  
-  return curr;
-};
-},{}],7:[function(require,module,exports){
+},{"emitter":3,"reduce":5}],7:[function(require,module,exports){
 var DistanceGrid = function (cellSize) {
   this._cellSize = cellSize;
   this._sqCellSize = cellSize * cellSize;
@@ -10674,10 +10730,10 @@ module.exports = DistanceGrid;
  * L.GeoJSON turns any GeoJSON data into a Leaflet layer.
  */
 
-var L = require('leaflet');
-L.markerClusterGroup = require('./markerClusterGroup');
+var L = require('nodesafe-leaflet');
+var markerClusterGroup = require('./MarkerClusterGroup');
 
-L.GeoJSON = L.markerClusterGroup.extend({
+var GeoJSON = markerClusterGroup.extend({
 
   initialize: function (geojson, options) {
     L.setOptions(this, options);
@@ -10700,7 +10756,6 @@ L.GeoJSON = L.markerClusterGroup.extend({
 
     this._queue = [];
 
-
     this._layers = {};
 
     if (geojson) {
@@ -10720,6 +10775,7 @@ L.GeoJSON = L.markerClusterGroup.extend({
           this.addData(feature);
         }
       }
+
       return this;
     }
 
@@ -10727,11 +10783,12 @@ L.GeoJSON = L.markerClusterGroup.extend({
 
     if (options.filter && !options.filter(geojson)) { return this; }
 
-    var layer = L.GeoJSON.geometryToLayer(geojson, options);
+    var layer = GeoJSON.geometryToLayer(geojson, options);
     if (!layer) {
       return this;
     }
-    layer.feature = L.GeoJSON.asFeature(geojson);
+
+    layer.feature = GeoJSON.asFeature(geojson);
 
     layer.defaultOptions = layer.options;
     this.resetStyle(layer);
@@ -10760,13 +10817,14 @@ L.GeoJSON = L.markerClusterGroup.extend({
     if (typeof style === 'function') {
       style = style(layer.feature);
     }
+
     if (layer.setStyle) {
       layer.setStyle(style);
     }
-  }
+  },
 });
 
-L.extend(L.GeoJSON, {
+L.extend(GeoJSON, {
   geometryToLayer: function (geojson, options) {
 
     var geometry = geojson.type === 'Feature' ? geojson.geometry : geojson,
@@ -10790,6 +10848,7 @@ L.extend(L.GeoJSON, {
         latlng = coordsToLatLng(coords[i]);
         layers.push(pointToLayer ? pointToLayer(geojson, latlng) : new L.Marker(latlng));
       }
+
       return new L.FeatureGroup(layers);
 
     case 'LineString':
@@ -10807,13 +10866,14 @@ L.extend(L.GeoJSON, {
         var layer = this.geometryToLayer({
           geometry: geometry.geometries[i],
           type: 'Feature',
-          properties: geojson.properties
+          properties: geojson.properties,
         }, options);
 
         if (layer) {
           layers.push(layer);
         }
       }
+
       return new L.FeatureGroup(layers);
 
     default:
@@ -10850,8 +10910,8 @@ L.extend(L.GeoJSON, {
 
     for (var i = 0, len = latlngs.length; i < len; i++) {
       coords.push(levelsDeep ?
-        L.GeoJSON.latLngsToCoords(latlngs[i], levelsDeep - 1, closed) :
-        L.GeoJSON.latLngToCoords(latlngs[i]));
+        GeoJSON.latLngsToCoords(latlngs[i], levelsDeep - 1, closed) :
+        GeoJSON.latLngToCoords(latlngs[i]));
     }
 
     if (!levelsDeep && closed) {
@@ -10863,8 +10923,8 @@ L.extend(L.GeoJSON, {
 
   getFeature: function (layer, newGeometry) {
     return layer.feature ?
-        L.extend({}, layer.feature, {geometry: newGeometry}) :
-        L.GeoJSON.asFeature(newGeometry);
+        L.extend({}, layer.feature, { geometry: newGeometry }) :
+        GeoJSON.asFeature(newGeometry);
   },
 
   asFeature: function (geoJSON) {
@@ -10875,18 +10935,18 @@ L.extend(L.GeoJSON, {
     return {
       type: 'Feature',
       properties: {},
-      geometry: geoJSON
+      geometry: geoJSON,
     };
-  }
+  },
 });
 
 var PointToGeoJSON = {
   toGeoJSON: function () {
-    return L.GeoJSON.getFeature(this, {
+    return GeoJSON.getFeature(this, {
       type: 'Point',
-      coordinates: L.GeoJSON.latLngToCoords(this.getLatLng())
+      coordinates: GeoJSON.latLngToCoords(this.getLatLng()),
     });
-  }
+  },
 };
 
 L.Marker.include(PointToGeoJSON);
@@ -10896,11 +10956,11 @@ L.CircleMarker.include(PointToGeoJSON);
 L.Polyline.prototype.toGeoJSON = function () {
   var multi = !L.Polyline._flat(this._latlngs);
 
-  var coords = L.GeoJSON.latLngsToCoords(this._latlngs, multi ? 1 : 0);
+  var coords = GeoJSON.latLngsToCoords(this._latlngs, multi ? 1 : 0);
 
-  return L.GeoJSON.getFeature(this, {
+  return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'LineString',
-    coordinates: coords
+    coordinates: coords,
   });
 };
 
@@ -10908,18 +10968,17 @@ L.Polygon.prototype.toGeoJSON = function () {
   var holes = !L.Polyline._flat(this._latlngs),
       multi = holes && !L.Polyline._flat(this._latlngs[0]);
 
-  var coords = L.GeoJSON.latLngsToCoords(this._latlngs, multi ? 2 : holes ? 1 : 0, true);
+  var coords = GeoJSON.latLngsToCoords(this._latlngs, multi ? 2 : holes ? 1 : 0, true);
 
   if (!holes) {
     coords = [coords];
   }
 
-  return L.GeoJSON.getFeature(this, {
+  return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'Polygon',
-    coordinates: coords
+    coordinates: coords,
   });
 };
-
 
 L.LayerGroup.include({
   toMultiPoint: function () {
@@ -10929,9 +10988,9 @@ L.LayerGroup.include({
       coords.push(layer.toGeoJSON().geometry.coordinates);
     });
 
-    return L.GeoJSON.getFeature(this, {
+    return GeoJSON.getFeature(this, {
       type: 'MultiPoint',
-      coordinates: coords
+      coordinates: coords,
     });
   },
 
@@ -10949,28 +11008,29 @@ L.LayerGroup.include({
     this.eachLayer(function (layer) {
       if (layer.toGeoJSON) {
         var json = layer.toGeoJSON();
-        jsons.push(isGeometryCollection ? json.geometry : L.GeoJSON.asFeature(json));
+        jsons.push(isGeometryCollection ? json.geometry : GeoJSON.asFeature(json));
       }
     });
 
     if (isGeometryCollection) {
-      return L.GeoJSON.getFeature(this, {
+      return GeoJSON.getFeature(this, {
         geometries: jsons,
-        type: 'GeometryCollection'
+        type: 'GeometryCollection',
       });
     }
 
     return {
       type: 'FeatureCollection',
-      features: jsons
+      features: jsons,
     };
-  }
+  },
 });
 
 module.exports = function (geojson, options) {
-  return new L.GeoJSON(geojson, options);
+  return new GeoJSON(geojson, options);
 };
-},{"./markerClusterGroup":10,"leaflet":3}],9:[function(require,module,exports){
+
+},{"./MarkerClusterGroup":10,"nodesafe-leaflet":4}],9:[function(require,module,exports){
 var MarkerCluster = L.Marker.extend({
   initialize: function (group, zoom, a, b) {
 
@@ -11074,7 +11134,7 @@ var MarkerCluster = L.Marker.extend({
     this._iconNeedsUpdate = true;
     this._expandBounds(new1);
 
-    if (new1 instanceof L.MarkerCluster) {
+    if (new1 instanceof MarkerCluster) {
       if (!isNotificationFromChild) {
         this._childClusters.push(new1);
         new1.__parent = this;
@@ -11097,7 +11157,7 @@ var MarkerCluster = L.Marker.extend({
     var addedCount,
         addedLatLng = marker._wLatLng || marker._latlng;
 
-    if (marker instanceof L.MarkerCluster) {
+    if (marker instanceof MarkerCluster) {
       this._bounds.extend(marker._bounds);
       addedCount = marker._childCount;
     } else {
@@ -11465,9 +11525,9 @@ MarkerCluster.include({
 module.exports = MarkerCluster;
 
 },{}],10:[function(require,module,exports){
-var L = require('leaflet');
-L.DistanceGrid = require('./DistanceGrid');
-L.MarkerCluster = require('./MarkerCluster');
+var L = require('nodesafe-leaflet');
+var DistanceGrid = require('./DistanceGrid');
+var MarkerCluster = require('./MarkerCluster');
 
 /*
  * L.MarkerClusterGroup extends L.FeatureGroup by clustering the markers contained within
@@ -11685,7 +11745,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
         if (offset === layersArray.length) {
           //Update the icons of all those visible clusters that were affected
           this._featureGroup.eachLayer(function (c) {
-            if (c instanceof L.MarkerCluster && c._iconNeedsUpdate) {
+            if (c instanceof MarkerCluster && c._iconNeedsUpdate) {
               c._updateIcon();
             }
           });
@@ -11760,7 +11820,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
     this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 
     fg.eachLayer(function (c) {
-      if (c instanceof L.MarkerCluster) {
+      if (c instanceof MarkerCluster) {
         c._updateIcon();
       }
     });
@@ -12085,7 +12145,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
   },
 
   _propagateEvent: function (e) {
-    if (e.layer instanceof L.MarkerCluster) {
+    if (e.layer instanceof MarkerCluster) {
       //Prevent multiple clustermouseover/off events if the icon is made up of stacked divs (Doesn't work in ie <= 8, no relatedTarget)
       if (e.originalEvent && this._isOrIsParent(e.layer._icon, e.originalEvent.relatedTarget)) {
         return;
@@ -12233,11 +12293,11 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
 
     //Set up DistanceGrids for each zoom
     for (var zoom = maxZoom; zoom >= 0; zoom--) {
-      this._gridClusters[zoom] = new L.DistanceGrid(radiusFn(zoom));
-      this._gridUnclustered[zoom] = new L.DistanceGrid(radiusFn(zoom));
+      this._gridClusters[zoom] = new DistanceGrid(radiusFn(zoom));
+      this._gridUnclustered[zoom] = new DistanceGrid(radiusFn(zoom));
     }
 
-    this._topClusterLevel = new L.MarkerCluster(this, -1);
+    this._topClusterLevel = new MarkerCluster(this, -1);
   },
 
   //Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
@@ -12279,7 +12339,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
 
         //Create new cluster with these 2 in it
 
-        var newCluster = new L.MarkerCluster(this, zoom, closest, layer);
+        var newCluster = new MarkerCluster(this, zoom, closest, layer);
         gridClusters[zoom].addObject(newCluster, this._map.project(newCluster._cLatLng, zoom));
         closest.__parent = newCluster;
         layer.__parent = newCluster;
@@ -12287,7 +12347,7 @@ var MarkerClusterGroup = L.FeatureGroup.extend({
         //First create any new intermediate parent clusters that don't exist
         var lastParent = newCluster;
         for (z = zoom - 1; z > parent._zoom; z--) {
-          lastParent = new L.MarkerCluster(this, z, lastParent);
+          lastParent = new MarkerCluster(this, z, lastParent);
           gridClusters[z].addObject(lastParent, this._map.project(closest.getLatLng(), z));
         }
         parent._addChild(lastParent);
@@ -12462,7 +12522,7 @@ MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
     this._topClusterLevel._recursivelyBecomeVisible(bounds, newZoomLevel);
     //TODO Maybe? Update markers in _recursivelyBecomeVisible
     fg.eachLayer(function (n) {
-      if (!(n instanceof L.MarkerCluster) && n._icon) {
+      if (!(n instanceof MarkerCluster) && n._icon) {
         n.setOpacity(1);
       }
     });
@@ -12567,4 +12627,4 @@ MarkerClusterGroup.include(!L.DomUtil.TRANSITION ? {
 
 module.exports = MarkerClusterGroup;
 
-},{"./DistanceGrid":7,"./MarkerCluster":9,"leaflet":3}]},{},[1]);
+},{"./DistanceGrid":7,"./MarkerCluster":9,"nodesafe-leaflet":4}]},{},[1]);

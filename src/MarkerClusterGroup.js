@@ -1,4 +1,4 @@
-var L = require('leaflet');
+var L = require('nodesafe-leaflet');
 var DistanceGrid = require('./DistanceGrid');
 var MarkerCluster = require('./MarkerCluster');
 

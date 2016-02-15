@@ -1,10 +1,10 @@
 {
   "name": "leaflet-geojson-cluster",
-  "repository": "https://github.com/paulserraino/leaflet-markercluster",
+  "repository": "https://github.com/ndelangen/Leaflet-leaflet-geojson-cluster",
   "version": "0.0.4",
   "description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
   "dependencies": {
-    "leaflet": "^0.7.3"
+    "nodesafe-leaflet": "^0.7.8"
   },
   "devDependencies": {
     "browserify": "^11.0.0",

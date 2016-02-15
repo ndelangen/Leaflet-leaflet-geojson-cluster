@@ -2,7 +2,7 @@
  * L.GeoJSON turns any GeoJSON data into a Leaflet layer.
  */
 
-var L = require('leaflet');
+var L = require('nodesafe-leaflet');
 var markerClusterGroup = require('./MarkerClusterGroup');
 
 var GeoJSON = markerClusterGroup.extend({
@@ -28,7 +28,6 @@ var GeoJSON = markerClusterGroup.extend({
 
     this._queue = [];
 
-
     this._layers = {};
 
     if (geojson) {
@@ -48,6 +47,7 @@ var GeoJSON = markerClusterGroup.extend({
           this.addData(feature);
         }
       }
+
       return this;
     }
 
@@ -59,6 +59,7 @@ var GeoJSON = markerClusterGroup.extend({
     if (!layer) {
       return this;
     }
+
     layer.feature = GeoJSON.asFeature(geojson);
 
     layer.defaultOptions = layer.options;
@@ -88,10 +89,11 @@ var GeoJSON = markerClusterGroup.extend({
     if (typeof style === 'function') {
       style = style(layer.feature);
     }
+
     if (layer.setStyle) {
       layer.setStyle(style);
     }
-  }
+  },
 });
 
 L.extend(GeoJSON, {
@@ -118,6 +120,7 @@ L.extend(GeoJSON, {
         latlng = coordsToLatLng(coords[i]);
         layers.push(pointToLayer ? pointToLayer(geojson, latlng) : new L.Marker(latlng));
       }
+
       return new L.FeatureGroup(layers);
 
     case 'LineString':
@@ -135,13 +138,14 @@ L.extend(GeoJSON, {
         var layer = this.geometryToLayer({
           geometry: geometry.geometries[i],
           type: 'Feature',
-          properties: geojson.properties
+          properties: geojson.properties,
         }, options);
 
         if (layer) {
           layers.push(layer);
         }
       }
+
       return new L.FeatureGroup(layers);
 
     default:
@@ -191,7 +195,7 @@ L.extend(GeoJSON, {
 
   getFeature: function (layer, newGeometry) {
     return layer.feature ?
-        L.extend({}, layer.feature, {geometry: newGeometry}) :
+        L.extend({}, layer.feature, { geometry: newGeometry }) :
         GeoJSON.asFeature(newGeometry);
   },
 
@@ -203,18 +207,18 @@ L.extend(GeoJSON, {
     return {
       type: 'Feature',
       properties: {},
-      geometry: geoJSON
+      geometry: geoJSON,
     };
-  }
+  },
 });
 
 var PointToGeoJSON = {
   toGeoJSON: function () {
     return GeoJSON.getFeature(this, {
       type: 'Point',
-      coordinates: GeoJSON.latLngToCoords(this.getLatLng())
+      coordinates: GeoJSON.latLngToCoords(this.getLatLng()),
     });
-  }
+  },
 };
 
 L.Marker.include(PointToGeoJSON);
@@ -228,7 +232,7 @@ L.Polyline.prototype.toGeoJSON = function () {
 
   return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'LineString',
-    coordinates: coords
+    coordinates: coords,
   });
 };
 
@@ -244,10 +248,9 @@ L.Polygon.prototype.toGeoJSON = function () {
 
   return GeoJSON.getFeature(this, {
     type: (multi ? 'Multi' : '') + 'Polygon',
-    coordinates: coords
+    coordinates: coords,
   });
 };
-
 
 L.LayerGroup.include({
   toMultiPoint: function () {
@@ -259,7 +262,7 @@ L.LayerGroup.include({
 
     return GeoJSON.getFeature(this, {
       type: 'MultiPoint',
-      coordinates: coords
+      coordinates: coords,
     });
   },
 
@@ -284,15 +287,15 @@ L.LayerGroup.include({
     if (isGeometryCollection) {
       return GeoJSON.getFeature(this, {
         geometries: jsons,
-        type: 'GeometryCollection'
+        type: 'GeometryCollection',
       });
     }
 
     return {
       type: 'FeatureCollection',
-      features: jsons
+      features: jsons,
     };
-  }
+  },
 });
 
 module.exports = function (geojson, options) {
