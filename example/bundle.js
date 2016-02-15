@@ -7,31 +7,22 @@ var map = L.map('map').setView([30.25, -97.75], 13);
 L.Icon.Default.imagePath = 'images';
 
 L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-  , id: 'paulserraino.n0dn3pbe'
+  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors', id: 'paulserraino.n0dn3pbe',
 }).addTo(map);
 
-
-function toGeoJSON (data) {
+function toGeoJSON(data) {
   var collection = {
-    "type": "FeatureCollection",
-      "features": []
+    type: 'FeatureCollection',
+    features: [],
   };
 
   var tmpl = [
-  '{'
-  , '"type": "Feature",'
-  , '"properties": {"foo": "bar"},'
-  , '"geometry": {'
-  ,  '"type": "Point",'
-  ,  '"coordinates": [:loc]'
-    , '}'
-  , '}'
+  '{', '"type": "Feature",', '"properties": {"foo": "bar"},', '"geometry": {',  '"type": "Point",',  '"coordinates": [:loc]', '}', '}',
   ].join('');
 
   data.forEach(function (datum) {
     try {
-      var t = tmpl.replace(':loc', datum.location.split(',').reverse().join(','))
+      var t = tmpl.replace(':loc', datum.location.split(',').reverse().join(','));
       t = JSON.parse(t);
       collection.features.push(t);
     } catch (err) {
@@ -44,12 +35,12 @@ function toGeoJSON (data) {
 
 request
   .get('https://data.texas.gov/resource/9e7h-gz56.json')
-  .end(function(error, response){
+  .end(function (error, response) {
     if (error) return console.error(error);
 
     var json = toGeoJSON(response.body);
     var markers = GeoJSONCluster(json);
-    map.addLayer(markers)
+    map.addLayer(markers);
   });
 
 },{"../":2,"nodesafe-leaflet":4,"superagent":6}],2:[function(require,module,exports){
@@ -224,7 +215,7 @@ Emitter.prototype.hasListeners = function(event){
  (c) 2010-2015, Vladimir Agafonkin
  (c) 2010-2011, CloudMade
 */
-if (typeof window === "undefined"){(function (window, document, undefined) {
+if (typeof window !== "undefined"){(function (window, document, undefined) {
 var oldL = window.L,
     L = {};
 
@@ -11031,11 +11022,12 @@ module.exports = function (geojson, options) {
 };
 
 },{"./MarkerClusterGroup":10,"nodesafe-leaflet":4}],9:[function(require,module,exports){
+var L = require('nodesafe-leaflet');
+
 var MarkerCluster = L.Marker.extend({
   initialize: function (group, zoom, a, b) {
 
     L.Marker.prototype.initialize.call(this, a ? (a._cLatLng || a.getLatLng()) : new L.LatLng(0, 0), { icon: this });
-
 
     this._group = group;
     this._zoom = zoom;
@@ -11050,6 +11042,7 @@ var MarkerCluster = L.Marker.extend({
     if (a) {
       this._addChild(a);
     }
+
     if (b) {
       this._addChild(b);
     }
@@ -11091,6 +11084,7 @@ var MarkerCluster = L.Marker.extend({
       for (i = 0; i < childClusters.length; i++) {
         newClusters = newClusters.concat(childClusters[i]._childClusters);
       }
+
       childClusters = newClusters;
     }
 
@@ -11122,12 +11116,13 @@ var MarkerCluster = L.Marker.extend({
       this._iconObj = this._group.options.iconCreateFunction(this);
       this._iconNeedsUpdate = false;
     }
+
     return this._iconObj.createIcon();
   },
+
   createShadow: function () {
     return this._iconObj.createShadow();
   },
-
 
   _addChild: function (new1, isNotificationFromChild) {
 
@@ -11139,11 +11134,13 @@ var MarkerCluster = L.Marker.extend({
         this._childClusters.push(new1);
         new1.__parent = this;
       }
+
       this._childCount += new1._childCount;
     } else {
       if (!isNotificationFromChild) {
         this._markers.push(new1);
       }
+
       this._childCount++;
     }
 
@@ -11188,6 +11185,7 @@ var MarkerCluster = L.Marker.extend({
       this._backupLatlng = this._latlng;
       this.setLatLng(startPos);
     }
+
     this._group._featureGroup.addLayer(this);
   },
 
@@ -11206,6 +11204,7 @@ var MarkerCluster = L.Marker.extend({
           }
         }
       },
+
       function (c) {
         var childClusters = c._childClusters,
           j, cm;
@@ -11272,6 +11271,7 @@ var MarkerCluster = L.Marker.extend({
           c._group._featureGroup.addLayer(nm);
         }
       },
+
       function (c) {
         c._addToMap(startPos);
       }
@@ -11323,6 +11323,7 @@ var MarkerCluster = L.Marker.extend({
           }
         }
       },
+
       function (c) {
         //Remove child clusters at just the bottom level
         for (i = c._childClusters.length - 1; i >= 0; i--) {
@@ -11361,6 +11362,7 @@ var MarkerCluster = L.Marker.extend({
       if (runAtEveryLevel) {
         runAtEveryLevel(this);
       }
+
       if (runAtBottomLevel && this._zoom === zoomLevelToStop) {
         runAtBottomLevel(this);
       }
@@ -11388,17 +11390,17 @@ var MarkerCluster = L.Marker.extend({
     for (i = markers.length - 1; i >= 0; i--) {
       this._expandBounds(markers[i]);
     }
+
     for (i = childClusters.length - 1; i >= 0; i--) {
       this._expandBounds(childClusters[i]);
     }
   },
 
-
   //Returns true if we are the parent of only one cluster and that cluster is the same as us
   _isSingleParent: function () {
     //Don't need to check this._markers as the rest won't work if there are any
     return this._childClusters.length > 0 && this._childClusters[0]._childCount === this._childCount;
-  }
+  },
 });
 
 /*
@@ -11406,26 +11408,26 @@ var MarkerCluster = L.Marker.extend({
 */
 L.QuickHull = {
 
-    /*
-     * @param {Object} cpt a point to be measured from the baseline
-     * @param {Array} bl the baseline, as represented by a two-element
-     *   array of latlng objects.
-     * @returns {Number} an approximate distance measure
-     */
-    getDistant: function (cpt, bl) {
+  /*
+   * @param {Object} cpt a point to be measured from the baseline
+   * @param {Array} bl the baseline, as represented by a two-element
+   *   array of latlng objects.
+   * @returns {Number} an approximate distance measure
+   */
+  getDistant: function (cpt, bl) {
       var vY = bl[1].lat - bl[0].lat,
         vX = bl[0].lng - bl[1].lng;
       return (vX * (cpt.lat - bl[0].lat) + vY * (cpt.lng - bl[0].lng));
     },
 
-    /*
-     * @param {Array} baseLine a two-element array of latlng objects
-     *   representing the baseline to project from
-     * @param {Array} latLngs an array of latlng objects
-     * @returns {Object} the maximum point and all new points to stay
-     *   in consideration for the hull.
-     */
-    findMostDistantPointFromBaseLine: function (baseLine, latLngs) {
+  /*
+   * @param {Array} baseLine a two-element array of latlng objects
+   *   representing the baseline to project from
+   * @param {Array} latLngs an array of latlng objects
+   * @returns {Object} the maximum point and all new points to stay
+   *   in consideration for the hull.
+   */
+  findMostDistantPointFromBaseLine: function (baseLine, latLngs) {
       var maxD = 0,
         maxPt = null,
         newPoints = [],
@@ -11450,15 +11452,14 @@ L.QuickHull = {
       return { maxPoint: maxPt, newPoints: newPoints };
     },
 
-
-    /*
-     * Given a baseline, compute the convex hull of latLngs as an array
-     * of latLngs.
-     *
-     * @param {Array} latLngs
-     * @returns {Array}
-     */
-    buildConvexHull: function (baseLine, latLngs) {
+  /*
+   * Given a baseline, compute the convex hull of latLngs as an array
+   * of latLngs.
+   *
+   * @param {Array} latLngs
+   * @returns {Array}
+   */
+  buildConvexHull: function (baseLine, latLngs) {
       var convexHullBaseLines = [],
         t = this.findMostDistantPointFromBaseLine(baseLine, latLngs);
 
@@ -11477,14 +11478,14 @@ L.QuickHull = {
       }
     },
 
-    /*
-     * Given an array of latlngs, compute a convex hull as an array
-     * of latlngs
-     *
-     * @param {Array} latLngs
-     * @returns {Array}
-     */
-    getConvexHull: function (latLngs) {
+  /*
+   * Given an array of latlngs, compute a convex hull as an array
+   * of latlngs
+   *
+   * @param {Array} latLngs
+   * @returns {Array}
+   */
+  getConvexHull: function (latLngs) {
       // find first baseline
       var maxLat = false, minLat = false,
         maxPt = null, minPt = null,
@@ -11496,16 +11497,18 @@ L.QuickHull = {
           maxPt = pt;
           maxLat = pt.lat;
         }
+
         if (minLat === false || pt.lat < minLat) {
           minPt = pt;
           minLat = pt.lat;
         }
       }
+
       var ch = [].concat(this.buildConvexHull([minPt, maxPt], latLngs),
                 this.buildConvexHull([maxPt, minPt], latLngs));
       return ch;
-    }
-  };
+    },
+};
 
 MarkerCluster.include({
   getConvexHull: function () {
@@ -11519,12 +11522,12 @@ MarkerCluster.include({
     }
 
     return L.QuickHull.getConvexHull(points);
-  }
+  },
 });
 
 module.exports = MarkerCluster;
 
-},{}],10:[function(require,module,exports){
+},{"nodesafe-leaflet":4}],10:[function(require,module,exports){
 var L = require('nodesafe-leaflet');
 var DistanceGrid = require('./DistanceGrid');
 var MarkerCluster = require('./MarkerCluster');
