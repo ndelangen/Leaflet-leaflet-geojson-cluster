@@ -1,7 +1,7 @@
 {
   "name": "nodesafe-leaflet-geojson-cluster",
   "repository": "https://github.com/ndelangen/Leaflet-leaflet-geojson-cluster",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
   "dependencies": {
     "nodesafe-leaflet": "^0.8.1"
