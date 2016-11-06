@@ -4,12 +4,12 @@
   "version": "0.0.4",
   "description": "Provides Beautiful Animated Marker Clustering functionality for Leaflet",
   "dependencies": {
-    "leaflet": "^0.7.3"
+    "leaflet": "^1.0.1"
   },
   "devDependencies": {
-    "browserify": "^11.0.0",
-    "ecstatic": "^0.8.0",
-    "superagent": "^1.2.0"
+    "browserify": "^13.1.1",
+    "ecstatic": "^2.1.0",
+    "superagent": "^2.3.0"
   },
   "keywords": [
     "gis",
